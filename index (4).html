@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memória da Consciência Negra</title>
+
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  JOGO DA MEMÓRIA EDUCATIVO DA CONSCIÊNCIA NEGRA              ║
+  ║  Arquivo único: abra o index.html direto no navegador.       ║
+  ║                                                              ║
+  ║  Estrutura de pastas (ao lado do index.html):                ║
+  ║    index.html                                                ║
+  ║    imagens/   -> fotos das personalidades (.jpg ou .png)     ║
+  ║    audios/    -> clique.mp3, acerto.mp3, erro.mp3,           ║
+  ║                  card.mp3, vitoria.mp3                       ║
+  ║                                                              ║
+  ║  Se faltar uma imagem, o jogo mostra as iniciais no lugar.   ║
+  ║  Se faltar um áudio, o jogo toca um "bip" simples no lugar.  ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+
+<style>
+  /* ============================================================
+     1) CORES DO JOGO
+     Quer mudar o visual? Troque os códigos de cor abaixo.
+     ============================================================ */
+  :root {
+    --ouro:        #E6A100;   /* amarelo ouro (destaques) */
+    --ouro-claro:  #FFD35C;   /* dourado brilhante (brilho/glow) */
+    --marrom:      #1A1008;   /* marrom escuro (fundo) */
+    --marrom-meio: #2B1B0E;   /* marrom um pouco mais claro (painéis) */
+    --verde:       #1E4D2B;   /* verde */
+    --vermelho:    #A82E2E;   /* vermelho terroso */
+    --creme:       #FFF1D0;   /* fundo da frente das cartas */
+
+    --fonte-titulo: Georgia, "Palatino Linotype", "Times New Roman", serif;
+    --fonte-texto:  "Segoe UI", "Trebuchet MS", Verdana, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--fonte-texto);
+    color: var(--creme);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(30,77,43,.55), transparent 45%),
+      radial-gradient(circle at 90% 90%, rgba(168,46,46,.35), transparent 45%),
+      var(--marrom);
+    overflow: hidden;
+  }
+
+  /* Faixa decorativa inspirada em tecidos africanos */
+  .faixa {
+    height: 12px;
+    background: repeating-linear-gradient(90deg,
+      var(--ouro) 0 28px, var(--vermelho) 28px 44px,
+      var(--verde) 44px 72px, var(--marrom) 72px 80px);
+  }
+
+  .tela { display: none; height: 100%; flex-direction: column; }
+  .tela.ativa { display: flex; }
+
+  button { font-family: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--ouro-claro);
+    outline-offset: 3px;
+  }
+
+  /* ============================================================
+     2) TELA DE ABERTURA
+     ============================================================ */
+  #tela-menu { overflow-y: auto; }
+
+  .menu-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .menu-caixa {
+    width: min(720px, 100%);
+    background: linear-gradient(160deg, var(--marrom-meio), var(--marrom));
+    border: 3px solid var(--ouro);
+    border-radius: 18px;
+    padding: 28px 32px 32px;
+    box-shadow: 0 0 0 6px rgba(230,161,0,.15), 0 20px 50px rgba(0,0,0,.6);
+    animation: entrada .7s ease-out both;
+  }
+  @keyframes entrada {
+    from { opacity: 0; transform: translateY(24px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .menu-caixa h1 {
+    font-family: var(--fonte-titulo);
+    font-size: clamp(30px, 5vw, 48px);
+    line-height: 1.05;
+    color: var(--ouro);
+    text-shadow: 0 3px 0 var(--vermelho);
+    text-align: center;
+  }
+  .menu-caixa .sub {
+    text-align: center; margin: 12px 0 22px;
+    font-size: 17px; color: var(--creme); opacity: .9;
+  }
+  .menu-caixa h2 {
+    font-family: var(--fonte-titulo);
+    font-size: 20px; color: var(--ouro-claro);
+    margin: 18px 0 10px;
+  }
+
+  .opcoes { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+  .opcao {
+    background: var(--marrom);
+    color: var(--creme);
+    border: 2px solid rgba(230,161,0,.45);
+    border-radius: 12px;
+    padding: 14px 12px;
+    font-size: 17px;
+    transition: transform .15s, border-color .15s, background .15s;
+  }
+  .opcao small { display: block; margin-top: 4px; font-size: 13px; opacity: .8; }
+  .opcao:hover { transform: translateY(-2px); border-color: var(--ouro); }
+  .opcao.ativa {
+    background: var(--verde);
+    border-color: var(--ouro-claro);
+    box-shadow: 0 0 14px rgba(255,211,92,.45);
+    font-weight: 700;
+  }
+
+  #campos-nomes { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 12px; }
+  #campos-nomes label { font-size: 14px; color: var(--ouro-claro); display: grid; gap: 4px; }
+  #campos-nomes input {
+    padding: 11px 12px; font-size: 17px; border-radius: 10px;
+    border: 2px solid var(--ouro); background: var(--creme); color: var(--marrom);
+  }
+  @media (max-width: 520px) { #campos-nomes { grid-template-columns: 1fr; } }
+
+  #btn-iniciar {
+    display: block; width: 100%; margin-top: 26px;
+    padding: 16px; font-size: 22px; font-weight: 800;
+    font-family: var(--fonte-titulo);
+    color: var(--marrom);
+    background: linear-gradient(180deg, var(--ouro-claro), var(--ouro));
+    border: 3px solid var(--marrom);
+    outline: 3px solid var(--ouro);
+    border-radius: 14px;
+    box-shadow: 0 6px 0 var(--vermelho), 0 12px 24px rgba(0,0,0,.5);
+    transition: transform .12s, box-shadow .12s;
+  }
+  #btn-iniciar:hover  { transform: translateY(-2px); }
+  #btn-iniciar:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--vermelho); }
+
+  /* ============================================================
+     3) TELA DO JOGO: PLACAR + TABULEIRO
+     ============================================================ */
+  #placar {
+    display: flex; justify-content: center; align-items: stretch;
+    gap: 12px; padding: 10px 14px; flex-wrap: wrap;
+  }
+
+  .painel {
+    min-width: 150px;
+    background: var(--marrom-meio);
+    border: 2px solid rgba(230,161,0,.4);
+    border-radius: 12px;
+    padding: 8px 16px;
+    text-align: center;
+    transition: all .25s;
+  }
+  .painel .rotulo { font-size: 13px; opacity: .8; }
+  .painel .valor  { font-family: var(--fonte-titulo); font-size: 26px; font-weight: 700; color: var(--ouro-claro); }
+  .painel .nome   { font-family: var(--fonte-titulo); font-size: 18px; font-weight: 700; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .painel .vez    { font-size: 13px; font-weight: 700; color: var(--marrom); background: var(--ouro-claro); border-radius: 20px; padding: 1px 10px; margin-top: 3px; visibility: hidden; display: inline-block; }
+
+  /* Jogador da vez fica em destaque */
+  .painel.ativo {
+    background: var(--verde);
+    border-color: var(--ouro-claro);
+    transform: scale(1.07);
+    box-shadow: 0 0 20px rgba(255,211,92,.6);
+  }
+  .painel.ativo .vez { visibility: visible; }
+
+  .barra-botoes { display: flex; gap: 8px; align-items: center; }
+  .btn-mini {
+    background: var(--marrom-meio); color: var(--creme);
+    border: 2px solid rgba(230,161,0,.4); border-radius: 10px;
+    padding: 8px 12px; font-size: 15px;
+  }
+  .btn-mini:hover { border-color: var(--ouro); }
+
+  #area-tabuleiro {
+    flex: 1; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px 14px 14px;
+  }
+
+  /* O tamanho das cartas (--w) é calculado pelo JavaScript
+     para caber na tela sem rolagem. */
+  #tabuleiro { display: grid; gap: 10px; justify-content: center; }
+
+  .carta {
+    width: var(--w); height: calc(var(--w) / 0.8);
+    background: none; border: none; padding: 0;
+    perspective: 700px;
+  }
+  .carta .interior {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .45s;
+  }
+  .carta.virada .interior, .carta.encontrada .interior { transform: rotateY(180deg); }
+
+  .carta .verso, .carta .frente {
+    position: absolute; inset: 0;
+    border-radius: 10px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    overflow: hidden;
+  }
+
+  /* VERSO da carta (virada para baixo) */
+  .carta .verso {
+    border: 3px solid var(--ouro);
+    background:
+      radial-gradient(circle at center, var(--ouro) 0 8%, transparent 9%),
+      conic-gradient(from 45deg at 50% 50%, var(--verde) 0 25%, var(--vermelho) 0 50%, var(--verde) 0 75%, var(--vermelho) 0);
+    box-shadow: inset 0 0 0 4px var(--marrom), 0 4px 10px rgba(0,0,0,.5);
+    display: grid; place-items: center;
+    font-size: calc(var(--w) * 0.4); color: var(--ouro-claro);
+    text-shadow: 0 2px 0 var(--marrom);
+    transition: filter .2s;
+  }
+  .carta:not(.virada):not(.encontrada):hover .verso { filter: brightness(1.25); }
+
+  /* FRENTE da carta (foto + nome) */
+  .carta .frente {
+    transform: rotateY(180deg);
+    background: var(--creme);
+    border: 3px solid var(--ouro);
+    color: var(--marrom);
+    display: flex; flex-direction: column;
+  }
+  .carta .frente .foto { flex: 1; min-height: 0; width: 100%; object-fit: cover; display: block; }
+  .carta .frente .rotulo-nome {
+    flex: 0 0 auto;
+    padding: 3px 4px; text-align: center; font-weight: 700; line-height: 1.15;
+    font-size: clamp(8px, calc(var(--w) * 0.105), 15px);
+    background: var(--ouro);
+    max-height: 2.5em; overflow: hidden;
+  }
+
+  .carta.encontrada .frente { border-color: var(--verde); box-shadow: 0 0 14px rgba(255,211,92,.7); }
+  .carta.encontrada { cursor: default; }
+  .carta.erro .interior { animation: tremer .4s; }
+  @keyframes tremer {
+    0%,100% { transform: rotateY(180deg) translateX(0); }
+    25% { transform: rotateY(180deg) translateX(-6px); }
+    75% { transform: rotateY(180deg) translateX(6px); }
+  }
+
+  /* Quando não existe a imagem, aparece um círculo com as iniciais */
+  .sem-foto {
+    display: grid; place-items: center;
+    font-family: var(--fonte-titulo); font-weight: 700; color: var(--creme);
+    text-shadow: 0 2px 0 rgba(0,0,0,.4);
+  }
+  .carta .sem-foto { flex: 1; min-height: 0; font-size: calc(var(--w) * 0.3); }
+
+  /* ============================================================
+     4) CARD EDUCATIVO (POP-UP AO ACERTAR O PAR)
+     ============================================================ */
+  .modal {
+    position: fixed; inset: 0; z-index: 50;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(10,5,2,.82);
+    padding: 16px;
+  }
+  .modal.aberto { display: flex; }
+
+  .card-edu {
+    position: relative; overflow: hidden;
+    width: min(620px, 100%);
+    max-height: 94vh; overflow-y: auto;
+    background: linear-gradient(160deg, #3A2410, var(--marrom));
+    border: 5px solid var(--ouro-claro);
+    border-radius: 20px;
+    padding: 26px 28px 28px;
+    text-align: center;
+    animation: surgir .45s cubic-bezier(.2,1.3,.4,1) both, brilho 2.4s ease-in-out infinite;
+  }
+  @keyframes surgir {
+    from { opacity: 0; transform: scale(.6) rotate(-3deg); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* Borda dourada que pulsa (efeito de glow) */
+  @keyframes brilho {
+    0%,100% { box-shadow: 0 0 0 3px var(--ouro), 0 0 25px 6px rgba(255,211,92,.55), 0 0 60px 14px rgba(230,161,0,.3); }
+    50%     { box-shadow: 0 0 0 3px var(--ouro), 0 0 40px 12px rgba(255,211,92,.85), 0 0 90px 26px rgba(230,161,0,.45); }
+  }
+  /* Faixa de luz que passa pelo card */
+  .card-edu::before {
+    content: ""; position: absolute; top: 0; left: -60%;
+    width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.18), transparent);
+    transform: skewX(-18deg);
+    animation: reflexo 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes reflexo { 0% { left: -60%; } 55%,100% { left: 130%; } }
+
+  .card-edu .moldura {
+    width: 190px; height: 190px; margin: 0 auto 14px;
+    border: 5px solid var(--ouro); border-radius: 50%;
+    overflow: hidden; background: var(--verde);
+    box-shadow: 0 0 0 4px var(--marrom), 0 0 22px rgba(255,211,92,.6);
+  }
+  .card-edu .moldura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-edu .moldura .sem-foto { width: 100%; height: 100%; font-size: 64px; }
+
+  .card-edu .selo-par {
+    display: inline-block; background: var(--verde); color: var(--ouro-claro);
+    border: 2px solid var(--ouro); border-radius: 20px;
+    padding: 2px 14px; font-size: 14px; margin-bottom: 8px;
+  }
+  .card-edu h3 {
+    font-family: var(--fonte-titulo); font-size: clamp(24px, 4vw, 32px);
+    color: var(--ouro-claro); margin-bottom: 10px;
+  }
+  .card-edu p {
+    font-size: 17px; line-height: 1.55; max-width: 60ch; margin: 0 auto 20px;
+  }
+
+  .btn-principal {
+    padding: 13px 34px; font-size: 19px; font-weight: 800;
+    font-family: var(--fonte-titulo);
+    color: var(--marrom);
+    background: linear-gradient(180deg, var(--ouro-claro), var(--ouro));
+    border: 3px solid var(--marrom); outline: 3px solid var(--ouro);
+    border-radius: 12px;
+    box-shadow: 0 5px 0 var(--vermelho);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn-principal:hover  { transform: translateY(-2px); }
+  .btn-principal:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--vermelho); }
+
+  /* ============================================================
+     5) TELA DE VITÓRIA
+     ============================================================ */
+  .card-vitoria { width: min(520px, 100%); }
+  .card-vitoria .trofeu { font-size: 74px; line-height: 1; margin-bottom: 8px; }
+  .card-vitoria h3 { font-size: clamp(26px, 5vw, 38px); }
+  .resumo {
+    display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 22px;
+  }
+  .resumo .item {
+    background: var(--marrom); border: 2px solid var(--ouro);
+    border-radius: 12px; padding: 8px 16px; min-width: 120px;
+  }
+  .resumo .item.campeao { background: var(--verde); border-color: var(--ouro-claro); }
+  .resumo .item span { display: block; font-size: 13px; opacity: .85; }
+  .resumo .item strong { font-family: var(--fonte-titulo); font-size: 24px; color: var(--ouro-claro); }
+
+  /* Confete */
+  .confete {
+    position: fixed; top: -40px; z-index: 60; pointer-events: none;
+    animation: cair linear forwards;
+  }
+  @keyframes cair { to { transform: translateY(110vh) rotate(540deg); opacity: .8; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-edu, .card-edu::before, .menu-caixa { animation: none; }
+    .carta .interior { transition: none; }
+    .confete { display: none; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ============================ MENU ============================ -->
+<section id="tela-menu" class="tela ativa">
+  <div class="faixa"></div>
+  <div class="menu-wrap">
+    <div class="menu-caixa">
+      <h1>Memória da Consciência Negra</h1>
+      <p class="sub">Encontre os pares e descubra histórias que ajudaram a construir o Brasil.</p>
+
+      <h2>Modo de jogo</h2>
+      <div class="opcoes" id="opcoes-modo">
+        <button class="opcao ativa" data-modo="solo">Solo (1 Jogador)</button>
+        <button class="opcao" data-modo="duo">1 vs 1 (Dois Jogadores)</button>
+      </div>
+
+      <div id="campos-nomes" hidden>
+        <label>Jogador 1
+          <input id="nome1" type="text" maxlength="15" placeholder="Jogador 1" autocomplete="off">
+        </label>
+        <label>Jogador 2
+          <input id="nome2" type="text" maxlength="15" placeholder="Jogador 2" autocomplete="off">
+        </label>
+      </div>
+
+      <h2>Nível do tabuleiro</h2>
+      <div class="opcoes" id="opcoes-nivel">
+        <button class="opcao ativa" data-nivel="4x4">4x4<small>16 cartas / 8 pares - Fácil</small></button>
+        <button class="opcao" data-nivel="4x6">4x6<small>24 cartas / 12 pares - Médio</small></button>
+        <button class="opcao" data-nivel="6x6">6x6<small>36 cartas / 18 pares - Desafio</small></button>
+      </div>
+
+      <button id="btn-iniciar">Iniciar Jogo</button>
+    </div>
+  </div>
+  <div class="faixa"></div>
+</section>
+
+<!-- ============================ JOGO ============================ -->
+<section id="tela-jogo" class="tela">
+  <div class="faixa"></div>
+  <div id="placar"></div>
+  <div id="area-tabuleiro"><div id="tabuleiro"></div></div>
+</section>
+
+<!-- ================== CARD EDUCATIVO (pop-up) ================== -->
+<div id="modal-card" class="modal" role="dialog" aria-modal="true" aria-labelledby="edu-nome">
+  <div class="card-edu">
+    <span class="selo-par">Par encontrado!</span>
+    <div class="moldura" id="edu-foto"></div>
+    <h3 id="edu-nome"></h3>
+    <p id="edu-texto"></p>
+    <button class="btn-principal" id="btn-continuar">Continuar Jogo</button>
+  </div>
+</div>
+
+<!-- ===================== TELA DE VITÓRIA ===================== -->
+<div id="modal-vitoria" class="modal" role="dialog" aria-modal="true" aria-labelledby="vit-titulo">
+  <div class="card-edu card-vitoria">
+    <div class="trofeu">🏆</div>
+    <h3 id="vit-titulo"></h3>
+    <p id="vit-msg"></p>
+    <div class="resumo" id="vit-resumo"></div>
+    <button class="btn-principal" id="btn-de-novo">Jogar Novamente</button>
+  </div>
+</div>
+
+
+<script>
+/* ================================================================
+   ✏️  ÁREA DOS ALUNOS: EDITE AQUI!
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   A) TEMPO PARA FECHAR AS CARTAS QUANDO ERRA
+   Valor em milissegundos (1000 = 1 segundo).
+   Quanto maior o número, mais tempo para memorizar!
+   ---------------------------------------------------------------- */
+const TEMPO_ERRO_MS = 1100;
+
+/* ----------------------------------------------------------------
+   B) SONS
+   Coloque os arquivos na pasta "audios/" ao lado do index.html.
+   Para trocar um som, troque o nome do arquivo aqui.
+   "bip" = notas (frequências em Hz) tocadas se o arquivo não existir.
+   ---------------------------------------------------------------- */
+const SONS = {
+  clique:  { arquivo: "audios/clique.mp3",  bip: [660] },
+  acerto:  { arquivo: "audios/acerto.mp3",  bip: [523, 659, 784] },
+  erro:    { arquivo: "audios/erro.mp3",    bip: [220, 165] },
+  card:    { arquivo: "audios/card.mp3",    bip: [784, 988] },
+  vitoria: { arquivo: "audios/vitoria.mp3", bip: [523, 659, 784, 1047] }
+};
+
+/* ----------------------------------------------------------------
+   C) OS PARES DO JOGO
+   Cada personalidade tem 4 campos:
+     id         -> número ÚNICO (não repita!)
+     nome       -> aparece na carta e no card educativo
+     imagem     -> caminho da foto dentro da pasta "imagens/"
+     descricao  -> texto educativo do card pop-up
+
+   COMO ADICIONAR UMA PESSOA:
+     1. Salve a foto em  imagens/  (ex.: imagens/mestre-domingos.jpg)
+     2. Copie uma linha abaixo, mude o id (use o próximo número)
+        e preencha nome, imagem e descricao.
+   O jogo sorteia quais pares aparecem a cada partida. Para o nível
+   6x6 você precisa de pelo menos 18 pares na lista.
+   ---------------------------------------------------------------- */
+const PARES = [
+  { id: 1,  nome: "Zumbi dos Palmares",
+    imagem: "imagens/zumbi.jpg",
+    descricao: "Zumbi (1655-1695) foi o último grande líder do Quilombo dos Palmares, na Serra da Barriga, em Alagoas. Resistiu por anos contra expedições que queriam destruir o quilombo. A data de sua morte, 20 de novembro, deu origem ao Dia Nacional da Consciência Negra." },
+
+  { id: 2,  nome: "Dandara dos Palmares",
+    imagem: "imagens/dandara.jpg",
+    descricao: "Segundo a tradição, Dandara foi uma guerreira do Quilombo dos Palmares, companheira de Zumbi. É lembrada por lutar ao lado dos quilombolas e defender a liberdade do seu povo. Hoje é um símbolo da força e da resistência das mulheres negras." },
+
+  { id: 3,  nome: "Conceição Evaristo",
+    imagem: "imagens/conceicao-evaristo.jpg",
+    descricao: "Escritora mineira, nascida em 1946, Conceição Evaristo criou o conceito de \"escrevivência\": escrever a partir da vivência do povo negro. Autora de \"Olhos d'água\" e \"Ponciá Vicêncio\", é uma das vozes mais importantes da literatura brasileira atual." },
+
+  { id: 4,  nome: "Luiza Mahin",
+    imagem: "imagens/luiza-mahin.jpg",
+    descricao: "Segundo a tradição, Luiza Mahin foi uma africana livre que viveu na Bahia e participou de revoltas contra a escravidão no século 19. Também é lembrada como mãe do abolicionista Luiz Gama. Sua história é cercada de lendas, e por isso é estudada com cuidado pelos historiadores." },
+
+  { id: 5,  nome: "Luiz Gama",
+    imagem: "imagens/luiz-gama.jpg",
+    descricao: "Nascido livre na Bahia, Luiz Gama foi vendido ilegalmente como escravizado ainda menino. Aprendeu a ler sozinho, tornou-se advogado sem diploma e usou as leis para libertar centenas de pessoas escravizadas. É considerado um dos maiores nomes do abolicionismo no Brasil." },
+
+  { id: 6,  nome: "Machado de Assis",
+    imagem: "imagens/machado-de-assis.jpg",
+    descricao: "Machado de Assis (1839-1908) nasceu no Rio de Janeiro, filho de pais humildes, e se tornou um dos maiores escritores da língua portuguesa. Autor de \"Dom Casmurro\", foi um dos fundadores e o primeiro presidente da Academia Brasileira de Letras." },
+
+  { id: 7,  nome: "Carolina Maria de Jesus",
+    imagem: "imagens/carolina-maria-de-jesus.jpg",
+    descricao: "Catadora de papel e moradora da favela do Canindé, em São Paulo, Carolina escrevia em cadernos que encontrava no lixo. Seu diário virou o livro \"Quarto de Despejo\" (1960), um sucesso mundial que mostrou a realidade da fome e da pobreza no Brasil." },
+
+  { id: 8,  nome: "Lélia Gonzalez",
+    imagem: "imagens/lelia-gonzalez.jpg",
+    descricao: "Intelectual, professora e ativista, Lélia Gonzalez (1935-1994) foi uma das fundadoras do Movimento Negro Unificado, em 1978. Pioneira do feminismo negro no Brasil, defendeu que a cultura brasileira tem profundas raízes africanas e indígenas." },
+
+  { id: 9,  nome: "Abdias Nascimento",
+    imagem: "imagens/abdias-nascimento.jpg",
+    descricao: "Abdias Nascimento (1914-2011) fundou em 1944 o Teatro Experimental do Negro, que levou atores negros a papéis de destaque nos palcos. Foi também deputado, senador e uma das principais vozes na luta contra o racismo no Brasil." },
+
+  { id: 10, nome: "Milton Santos",
+    imagem: "imagens/milton-santos.jpg",
+    descricao: "Geógrafo e professor baiano, Milton Santos (1926-2001) é um dos pensadores mais respeitados do mundo. Em 1994 recebeu o Prêmio Vautrin Lud, considerado o \"Nobel da Geografia\". Ensinou que o espaço onde vivemos reflete as desigualdades da sociedade." },
+
+  { id: 11, nome: "Mãe Menininha do Gantois",
+    imagem: "imagens/mae-menininha.jpg",
+    descricao: "Mãe Menininha (1894-1986) foi ialorixá do Terreiro do Gantois, em Salvador, por mais de 60 anos. Respeitada por pessoas de todas as crenças, tornou-se símbolo da resistência e da dignidade das religiões de matriz africana no Brasil." },
+
+  { id: 12, nome: "Mestre Bimba",
+    imagem: "imagens/mestre-bimba.jpg",
+    descricao: "Manuel dos Reis Machado (1900-1974), o Mestre Bimba, criou a Capoeira Regional na Bahia. Em 1937 abriu a primeira academia de capoeira registrada oficialmente, ajudando a transformar uma prática antes perseguida em patrimônio cultural brasileiro." },
+
+  { id: 13, nome: "Mestre Pastinha",
+    imagem: "imagens/mestre-pastinha.jpg",
+    descricao: "Vicente Ferreira Pastinha (1889-1981) é o grande símbolo da Capoeira Angola. Fundou em Salvador, em 1941, o Centro Esportivo de Capoeira Angola, que preservou os fundamentos e a tradição dessa arte criada pelos africanos escravizados e seus descendentes." },
+
+  { id: 14, nome: "Marielle Franco",
+    imagem: "imagens/marielle-franco.jpg",
+    descricao: "Nascida na favela da Maré, no Rio de Janeiro, Marielle Franco foi socióloga e vereadora eleita em 2016. Defendeu os direitos humanos, das mulheres, das pessoas negras e das comunidades periféricas. Sua memória inspira lutas por justiça no Brasil e no mundo." },
+
+  { id: 15, nome: "Maria Firmina dos Reis",
+    imagem: "imagens/maria-firmina.jpg",
+    descricao: "Maria Firmina dos Reis (1822-1917), professora maranhense, publicou em 1859 o romance \"Úrsula\", considerado o primeiro romance abolicionista da literatura brasileira e o primeiro escrito por uma mulher negra no país." },
+
+  { id: 16, nome: "Tereza de Benguela",
+    imagem: "imagens/tereza-de-benguela.jpg",
+    descricao: "No século 18, Tereza de Benguela liderou o Quilombo do Quariterê, em Mato Grosso, organizando a produção, a defesa e a vida política da comunidade. Em sua homenagem, 25 de julho é o Dia Nacional de Tereza de Benguela e da Mulher Negra." },
+
+  { id: 17, nome: "Jerry Lawson",
+    imagem: "imagens/jerry-lawson.jpg",
+    descricao: "O engenheiro estadunidense Gerald \"Jerry\" Lawson (1940-2011) liderou a equipe que criou o Fairchild Channel F, lançado em 1976. Foi o primeiro videogame com cartuchos intercambiáveis, ideia que mudou para sempre a história dos jogos eletrônicos." },
+
+  { id: 18, nome: "Pelé",
+    imagem: "imagens/pele.jpg",
+    descricao: "Edson Arantes do Nascimento (1940-2022), o Pelé, nasceu em Minas Gerais e é o único jogador da história a vencer três Copas do Mundo (1958, 1962 e 1970). Filho de família humilde, tornou-se um dos maiores símbolos do Brasil no mundo." }
+
+  /* Para adicionar mais, coloque uma vírgula depois do último item
+     e copie o modelo:
+     , { id: 19, nome: "Nome", imagem: "imagens/arquivo.jpg", descricao: "Texto..." }
+  */
+];
+
+/* ----------------------------------------------------------------
+   D) NÍVEIS DO TABULEIRO
+   linhas x colunas. O total de cartas precisa ser um número PAR.
+   ---------------------------------------------------------------- */
+const NIVEIS = {
+  "4x4": { linhas: 4, colunas: 4 },   //  16 cartas /  8 pares
+  "4x6": { linhas: 4, colunas: 6 },   //  24 cartas / 12 pares
+  "6x6": { linhas: 6, colunas: 6 }    //  36 cartas / 18 pares
+};
+
+/* As cores do jogo ficam no começo do <style>, na parte :root { ... } */
+
+
+/* ================================================================
+   ⚙️  DAQUI PARA BAIXO É O "MOTOR" DO JOGO
+   ================================================================ */
+
+/* ---------- Atalhos para elementos da página ---------- */
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Escolhas do menu ---------- */
+let modoEscolhido  = "solo";
+let nivelEscolhido = "4x4";
+let somLigado      = true;
+
+/* ---------- Estado da partida (reiniciado a cada jogo) ---------- */
+let jogo = {};
+
+/* ================================================================
+   SOM
+   Tenta tocar o arquivo; se não existir, toca um bip.
+   ================================================================ */
+let contextoAudio = null;
+
+function bip(notas) {
+  try {
+    contextoAudio = contextoAudio || new (window.AudioContext || window.webkitAudioContext)();
+    let inicio = contextoAudio.currentTime;
+    notas.forEach((freq) => {
+      const osc = contextoAudio.createOscillator();
+      const vol = contextoAudio.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      vol.gain.setValueAtTime(0.15, inicio);
+      vol.gain.exponentialRampToValueAtTime(0.001, inicio + 0.18);
+      osc.connect(vol).connect(contextoAudio.destination);
+      osc.start(inicio);
+      osc.stop(inicio + 0.2);
+      inicio += 0.12;
+    });
+  } catch (e) { /* sem áudio: o jogo continua normalmente */ }
+}
+
+/* Cria os objetos de áudio uma vez só */
+Object.values(SONS).forEach((som) => {
+  try {
+    som.audio = new Audio(som.arquivo);
+    som.audio.preload = "auto";
+    som.audio.addEventListener("error", () => { som.falhou = true; });
+  } catch (e) { som.falhou = true; }
+});
+
+function tocar(nome) {
+  if (!somLigado) return;
+  const som = SONS[nome];
+  if (!som) return;
+  if (som.falhou || !som.audio) { bip(som.bip); return; }
+  try {
+    som.audio.currentTime = 0;
+    const promessa = som.audio.play();
+    if (promessa && promessa.catch) promessa.catch(() => bip(som.bip));
+  } catch (e) { bip(som.bip); }
+}
+
+/* ================================================================
+   MENU
+   ================================================================ */
+function ativarGrupo(containerId, atributo, aoEscolher) {
+  const botoes = document.querySelectorAll("#" + containerId + " .opcao");
+  botoes.forEach((botao) => {
+    botao.addEventListener("click", () => {
+      botoes.forEach((b) => b.classList.remove("ativa"));
+      botao.classList.add("ativa");
+      aoEscolher(botao.dataset[atributo]);
+      tocar("clique");
+    });
+  });
+}
+
+ativarGrupo("opcoes-modo", "modo", (valor) => {
+  modoEscolhido = valor;
+  $("campos-nomes").hidden = (valor !== "duo");
+});
+ativarGrupo("opcoes-nivel", "nivel", (valor) => { nivelEscolhido = valor; });
+
+$("btn-iniciar").addEventListener("click", iniciarJogo);
+
+function mostrarTela(nome) {
+  document.querySelectorAll(".tela").forEach((t) => t.classList.remove("ativa"));
+  $("tela-" + nome).classList.add("ativa");
+}
+
+/* ================================================================
+   FUNÇÕES AUXILIARES
+   ================================================================ */
+
+/* Embaralha uma lista (algoritmo Fisher-Yates) */
+function embaralhar(lista) {
+  const copia = [...lista];
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+  return copia;
+}
+
+/* Iniciais do nome (usadas quando a imagem não existe) */
+function iniciais(nome) {
+  const palavras = nome.split(" ").filter((p) => p.length > 2);
+  const lista = palavras.length ? palavras : nome.split(" ");
+  return (lista[0][0] + (lista.length > 1 ? lista[lista.length - 1][0] : "")).toUpperCase();
+}
+
+/* Cria a foto da pessoa. Se der erro ao carregar, troca por um círculo com iniciais. */
+function criarFoto(par, classe) {
+  const img = document.createElement("img");
+  img.className = classe;
+  img.src = par.imagem;
+  img.alt = par.nome;
+  img.draggable = false;
+  img.addEventListener("error", () => {
+    const sem = document.createElement("div");
+    sem.className = "sem-foto " + classe;
+    sem.style.background = "hsl(" + ((par.id * 47) % 360) + ", 45%, 32%)";
+    sem.textContent = iniciais(par.nome);
+    img.replaceWith(sem);
+  });
+  return img;
+}
+
+function formatarTempo(segundos) {
+  const m = String(Math.floor(segundos / 60)).padStart(2, "0");
+  const s = String(segundos % 60).padStart(2, "0");
+  return m + ":" + s;
+}
+
+/* ================================================================
+   INICIAR UMA PARTIDA
+   ================================================================ */
+function iniciarJogo() {
+  const nivel = NIVEIS[nivelEscolhido];
+  const totalPares = (nivel.linhas * nivel.colunas) / 2;
+
+  /* Sorteia os pares dessa partida e duplica para formar o baralho */
+  const escolhidos = embaralhar(PARES).slice(0, totalPares);
+  const baralho = embaralhar([...escolhidos, ...escolhidos]);
+
+  /* Nomes dos jogadores (se vazio, usa o padrão) */
+  const nome1 = $("nome1").value.trim() || "Jogador 1";
+  const nome2 = $("nome2").value.trim() || "Jogador 2";
+
+  pararCronometro();
+  jogo = {
+    modo: modoEscolhido,
+    nivel: nivel,
+    totalPares: totalPares,
+    encontrados: 0,
+    viradas: [],          // as (até) 2 cartas viradas no momento
+    bloqueado: false,     // true = ignora cliques (esperando animação)
+    tentativas: 0,
+    segundos: 0,
+    cronometro: null,
+    jogadores: modoEscolhido === "duo"
+      ? [{ nome: nome1, pontos: 0 }, { nome: nome2, pontos: 0 }]
+      : [],
+    vez: 0                // índice do jogador da vez (0 ou 1)
+  };
+
+  montarPlacar();
+  montarTabuleiro(baralho);
+  mostrarTela("jogo");
+  ajustarTabuleiro();
+}
+
+/* ================================================================
+   PLACAR
+   ================================================================ */
+function montarPlacar() {
+  const placar = $("placar");
+  placar.innerHTML = "";
+
+  if (jogo.modo === "solo") {
+    placar.append(
+      criarPainel("Tempo", "00:00", "p-tempo"),
+      criarPainel("Tentativas", "0", "p-tentativas")
+    );
+  } else {
+    jogo.jogadores.forEach((j, i) => {
+      const p = document.createElement("div");
+      p.className = "painel";
+      p.id = "p-jogador" + i;
+
+      const nome = document.createElement("div");
+      nome.className = "nome";
+      nome.textContent = j.nome;               // textContent evita código malicioso no nome
+
+      const valor = document.createElement("div");
+      valor.className = "valor";
+      valor.id = "pontos" + i;
+      valor.textContent = "0";
+
+      const vez = document.createElement("div");
+      vez.className = "vez";
+      vez.textContent = "▶ Sua vez!";
+
+      p.append(nome, valor, vez);
+      placar.append(p);
+    });
+  }
+
+  /* Botões de menu e som */
+  const barra = document.createElement("div");
+  barra.className = "barra-botoes";
+
+  const btnMenu = document.createElement("button");
+  btnMenu.className = "btn-mini";
+  btnMenu.textContent = "Menu";
+  btnMenu.addEventListener("click", () => { pararCronometro(); mostrarTela("menu"); });
+
+  const btnSom = document.createElement("button");
+  btnSom.className = "btn-mini";
+  btnSom.textContent = somLigado ? "🔊 Som" : "🔇 Mudo";
+  btnSom.addEventListener("click", () => {
+    somLigado = !somLigado;
+    btnSom.textContent = somLigado ? "🔊 Som" : "🔇 Mudo";
+  });
+
+  barra.append(btnSom, btnMenu);
+  placar.append(barra);
+  atualizarPlacar();
+}
+
+function criarPainel(rotulo, valor, id) {
+  const p = document.createElement("div");
+  p.className = "painel";
+  const r = document.createElement("div");
+  r.className = "rotulo";
+  r.textContent = rotulo;
+  const v = document.createElement("div");
+  v.className = "valor";
+  v.id = id;
+  v.textContent = valor;
+  p.append(r, v);
+  return p;
+}
+
+function atualizarPlacar() {
+  if (jogo.modo === "solo") {
+    $("p-tempo").textContent = formatarTempo(jogo.segundos);
+    $("p-tentativas").textContent = jogo.tentativas;
+  } else {
+    jogo.jogadores.forEach((j, i) => {
+      $("pontos" + i).textContent = j.pontos;
+      $("p-jogador" + i).classList.toggle("ativo", i === jogo.vez);
+    });
+  }
+}
+
+/* Cronômetro (só no modo Solo; começa na primeira carta virada) */
+function iniciarCronometro() {
+  if (jogo.cronometro || jogo.modo !== "solo") return;
+  jogo.cronometro = setInterval(() => {
+    jogo.segundos++;
+    atualizarPlacar();
+  }, 1000);
+}
+function pararCronometro() {
+  if (jogo.cronometro) clearInterval(jogo.cronometro);
+  jogo.cronometro = null;
+}
+
+/* ================================================================
+   TABULEIRO
+   ================================================================ */
+function montarTabuleiro(baralho) {
+  const tab = $("tabuleiro");
+  tab.innerHTML = "";
+  tab.style.gridTemplateColumns = "repeat(" + jogo.nivel.colunas + ", var(--w))";
+
+  baralho.forEach((par) => {
+    const carta = document.createElement("button");
+    carta.className = "carta";
+    carta.dataset.id = par.id;
+    carta.setAttribute("aria-label", "Carta virada para baixo");
+
+    const interior = document.createElement("div");
+    interior.className = "interior";
+
+    const verso = document.createElement("div");
+    verso.className = "verso";
+    verso.textContent = "✦";
+
+    const frente = document.createElement("div");
+    frente.className = "frente";
+    const rotulo = document.createElement("div");
+    rotulo.className = "rotulo-nome";
+    rotulo.textContent = par.nome;
+    frente.append(criarFoto(par, "foto"), rotulo);
+
+    interior.append(verso, frente);
+    carta.append(interior);
+    carta.addEventListener("click", () => clicarCarta(carta, par));
+    tab.append(carta);
+  });
+}
+
+/* Calcula o tamanho das cartas para tudo caber na tela do notebook */
+function ajustarTabuleiro() {
+  if (!jogo.nivel) return;
+  const area = $("area-tabuleiro");
+  const folga = 10;                         // espaço entre cartas (igual ao gap do CSS)
+  const { linhas, colunas } = jogo.nivel;
+  const larguraDisp = area.clientWidth  - 28 - folga * (colunas - 1);
+  const alturaDisp  = area.clientHeight - 22 - folga * (linhas - 1);
+  const w = Math.max(40, Math.min(larguraDisp / colunas, (alturaDisp / linhas) * 0.8, 170));
+  $("tabuleiro").style.setProperty("--w", w + "px");
+}
+window.addEventListener("resize", ajustarTabuleiro);
+
+/* ================================================================
+   REGRAS DO JOGO
+   ================================================================ */
+function clicarCarta(carta, par) {
+  if (jogo.bloqueado) return;
+  if (carta.classList.contains("virada") || carta.classList.contains("encontrada")) return;
+
+  iniciarCronometro();
+  tocar("clique");
+
+  carta.classList.add("virada");
+  carta.setAttribute("aria-label", "Carta: " + par.nome);
+  jogo.viradas.push({ carta, par });
+
+  if (jogo.viradas.length === 2) verificarPar();
+}
+
+function verificarPar() {
+  jogo.bloqueado = true;
+  jogo.tentativas++;
+  atualizarPlacar();
+
+  const [a, b] = jogo.viradas;
+
+  if (a.par.id === b.par.id) {
+    /* ---------- ACERTOU ---------- */
+    setTimeout(() => {
+      a.carta.classList.add("encontrada");
+      b.carta.classList.add("encontrada");
+      tocar("acerto");
+
+      jogo.encontrados++;
+      if (jogo.modo === "duo") jogo.jogadores[jogo.vez].pontos++;   // quem acerta pontua e joga de novo
+      atualizarPlacar();
+
+      if (jogo.encontrados === jogo.totalPares) pararCronometro();
+
+      setTimeout(() => abrirCardEducativo(a.par), 650);
+    }, 550);
+
+  } else {
+    /* ---------- ERROU ---------- */
+    setTimeout(() => {
+      tocar("erro");
+      a.carta.classList.add("erro");
+      b.carta.classList.add("erro");
+    }, 350);
+
+    setTimeout(() => {
+      [a, b].forEach((x) => {
+        x.carta.classList.remove("virada", "erro");
+        x.carta.setAttribute("aria-label", "Carta virada para baixo");
+      });
+      jogo.viradas = [];
+      if (jogo.modo === "duo") jogo.vez = 1 - jogo.vez;             // errou: passa a vez
+      atualizarPlacar();
+      jogo.bloqueado = false;
+    }, TEMPO_ERRO_MS);
+  }
+}
+
+/* ================================================================
+   CARD EDUCATIVO
+   ================================================================ */
+function abrirCardEducativo(par) {
+  const moldura = $("edu-foto");
+  moldura.innerHTML = "";
+  moldura.append(criarFoto(par, "foto-card"));
+  $("edu-nome").textContent  = par.nome;
+  $("edu-texto").textContent = par.descricao;
+
+  $("modal-card").classList.add("aberto");
+  tocar("card");
+  $("btn-continuar").focus();
+}
+
+$("btn-continuar").addEventListener("click", () => {
+  $("modal-card").classList.remove("aberto");
+  jogo.viradas = [];
+  tocar("clique");
+
+  if (jogo.encontrados === jogo.totalPares) {
+    setTimeout(mostrarVitoria, 300);
+  } else {
+    jogo.bloqueado = false;
+  }
+});
+
+/* ================================================================
+   TELA DE VITÓRIA
+   ================================================================ */
+function criarItemResumo(rotulo, valor, destaque) {
+  const d = document.createElement("div");
+  d.className = "item" + (destaque ? " campeao" : "");
+  const s = document.createElement("span");
+  s.textContent = rotulo;
+  const st = document.createElement("strong");
+  st.textContent = valor;
+  d.append(s, st);
+  return d;
+}
+
+function mostrarVitoria() {
+  const resumo = $("vit-resumo");
+  resumo.innerHTML = "";
+
+  if (jogo.modo === "solo") {
+    $("vit-titulo").textContent = "Parabéns! 🎉";
+    $("vit-msg").textContent = "Você encontrou todos os pares e conheceu essas histórias!";
+    resumo.append(
+      criarItemResumo("Tempo", formatarTempo(jogo.segundos)),
+      criarItemResumo("Tentativas", jogo.tentativas)
+    );
+  } else {
+    const [j1, j2] = jogo.jogadores;
+    if (j1.pontos === j2.pontos) {
+      $("vit-titulo").textContent = "Empate! 🤝";
+      $("vit-msg").textContent = "Os dois jogadores acertaram o mesmo número de pares. Que partida!";
+    } else {
+      const campeao = j1.pontos > j2.pontos ? j1 : j2;
+      $("vit-titulo").textContent = campeao.nome + " é o Vencedor! 🎉";
+      $("vit-msg").textContent = "Placar final da partida:";
+    }
+    jogo.jogadores.forEach((j) => {
+      const lider = j1.pontos !== j2.pontos && j.pontos === Math.max(j1.pontos, j2.pontos);
+      resumo.append(criarItemResumo(j.nome, j.pontos + (j.pontos === 1 ? " par" : " pares"), lider));
+    });
+  }
+
+  $("modal-vitoria").classList.add("aberto");
+  tocar("vitoria");
+  lancarConfete();
+  $("btn-de-novo").focus();
+}
+
+$("btn-de-novo").addEventListener("click", () => {
+  $("modal-vitoria").classList.remove("aberto");
+  mostrarTela("menu");
+});
+
+/* Confete de comemoração */
+function lancarConfete() {
+  const simbolos = ["✨", "🎉", "⭐", "🟡", "🟢", "🔴"];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement("span");
+    c.className = "confete";
+    c.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.fontSize = 16 + Math.random() * 20 + "px";
+    c.style.animationDuration = 2.5 + Math.random() * 2.5 + "s";
+    c.style.animationDelay = Math.random() * 1.2 + "s";
+    document.body.append(c);
+    setTimeout(() => c.remove(), 7000);
+  }
+}
+</script>
+</body>
+</html>
